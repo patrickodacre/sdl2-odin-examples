@@ -19,9 +19,7 @@ If you're interested in programming games from scratch, using SDL2 and the Odin 
 
 Each folder contains all files needed to run that particular example.
 
-To compile and run each example simply navigate into that folder using your favorite terminal and run the following:
-
-`odin run .`
+To compile and run each example simply navigate into that folder using your favorite terminal and type `odin run .`
 
 ## About Handmade Games
 
