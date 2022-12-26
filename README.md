@@ -15,9 +15,17 @@ If you're interested in programming games from scratch, using SDL2 and the Odin 
 
 ----
 
+## Running These Examples
+
+Each folder contains all files needed to run that particular example.
+
+To compile and run each example simply navigate into that folder using your favorite terminal and run the following:
+
+`odin run .`
+
 ## About Handmade Games
 
-Handmade Games is an effort to encourage and help others to make games from scratch, without the use of existing game engines like Godot, Unreal or Unity.
+Handmade Games is an effort to encourage and help others to make games from scratch, without the use of existing game engines like Godot, Unreal, or Unity.
 
 Whether you're just **learning how to program**, or you're an experienced programmer just **learning how to program games**, you'll find lots of material to help you on your way.
 
