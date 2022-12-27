@@ -79,9 +79,8 @@ main :: proc()
 
 		// START update and render
 
-		// render in the midding of the window
-		x : i32 = (WINDOW_WIDTH / 2) - i32(len(game.text_input) / 2)
-		y : i32 = (WINDOW_HEIGHT / 2)
+		x : i32 = 100
+		y : i32 = 100
 		// reuse the same text_input_dest rather than create a new SDL.Rect each frame
 		make_word(game.text_input, x, y, &game.text_input_dest)
 
@@ -174,7 +173,8 @@ clean_sdl :: proc()
 // create a map of chars that be used in make_word
 create_chars :: proc()
 {
-	chars := "',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	chars := "!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	for c in chars[:]
 	{
 		str := utf8.runes_to_string([]rune{c})
@@ -185,7 +185,6 @@ create_chars :: proc()
 
 		game.chars[c] = SDL.CreateTextureFromSurface(game.renderer, surface)
 	}
-
 }
 
 // render textures corresponding to each char in a string
@@ -209,8 +208,8 @@ make_word :: proc(text: string, x, y : i32, dest: ^SDL.Rect)
 
 		prev_chars_w += dest.w + char_spacing
 	}
-
 }
+
 // check for a quit event
 // this is an example of using a Named Result - "exit".
 // with named results we can just put "return" at the end of the function

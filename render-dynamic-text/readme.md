@@ -1,102 +1,126 @@
-# Rendering Static Text
+# Rendering Dynamic Text
 
-To render the text to the screen we still require our game loop. I've tried to move as much of that boilerplate / secondary code outside of the `main` function so you can focus on what is necessary for rendering text.
+This is a method I came up with for rendering dynamic text.
 
-## Initializing the SDL TrueType Font Library
+By "dynamic" I mean text that isn't known at compile time.
 
-As with all SDL libraries, we need to initialize the TTF library before we can use it, and this includes chosing the font we want to use for the text textures we want to render. For our example we'll use the Terminal font.
+This is a fairly simple example -- things like word-wrapping and line breaks aren't handled.
 
-```odin
+## Texture Map
 
-init_font := SDL_TTF.Init()
-assert(init_font == 0, SDL.GetErrorString())
-game.font = SDL_TTF.OpenFont("Terminal.ttf", game.font_size)
-assert(game.font != nil, SDL.GetErrorString())
-
-```
-
-## Creating Textures from Our Chosen Text
-
-Next we'll create a helper function for creating our text textures:
+First, we create a `map` so we can lookup textures for numbers, letters, and other symbols.
 
 ```odin
 
-// create textures for the given str
-// optional scale param allows us to easily size the texture generated
-create_text :: proc(str: cstring, scale: i32 = 1) -> Text
+// create a map of chars that be used in make_word
+create_chars :: proc()
 {
-	// create surface
-	surface := SDL_TTF.RenderText_Solid(game.font, str, COLOR_WHITE)
-	defer SDL.FreeSurface(surface)
 
-	// create texture to render
-	texture := SDL.CreateTextureFromSurface(game.renderer, surface)
+	chars := "!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	for c in chars[:]
+	{
+		str := utf8.runes_to_string([]rune{c})
+		defer delete(str)
 
-	// destination SDL.Rect
-	dest_rect := SDL.Rect{}
-	SDL_TTF.SizeText(game.font, str, &dest_rect.w, &dest_rect.h)
+		surface := SDL_TTF.RenderText_Solid(game.font, cstring(raw_data(str)), COLOR_WHITE)
+		defer SDL.FreeSurface(surface)
 
-	// scale the size of the text
-	dest_rect.w *= scale
-	dest_rect.h *= scale
-
-	return Text{tex = texture, dest = dest_rect}
+		game.chars[c] = SDL.CreateTextureFromSurface(game.renderer, surface)
+	}
 }
 
 ```
 
-With the exception of the text itself and the sizing, the code is the same for creating each texture. Using this helper function allows us to avoid typing the same code again and again.
+This map helps us when using `make_word()`.
 
-### The Text Struct
-
-Notice the `create_text` function returns a new object -- `Text`
+## make_word() to Render Our Text
 
 ```odin
 
-Text :: struct
+// render textures corresponding to each char in a string
+make_word :: proc(text: string, x, y : i32, dest: ^SDL.Rect)
 {
-	tex: ^SDL.Texture,
-	dest: SDL.Rect,
+
+	char_spacing : i32 = 2
+	prev_chars_w : i32 = 0
+
+	for c in text
+	{
+		char_tex := game.chars[c]
+
+		// render this char after the previous one
+		dest.x = x + prev_chars_w
+		dest.y = y
+		// size dest SDL.Rect for the current char_tex
+		SDL.QueryTexture(char_tex, nil, nil, &dest.w, &dest.h)
+
+		SDL.RenderCopy(game.renderer, char_tex, nil, dest)
+
+		prev_chars_w += dest.w + char_spacing
+	}
 }
 
 ```
 
-This struct holds a reference to our texture and the SDL.Rect used to render the texture to the window.
+`make_word()` goes through each character in a string, finds its corresponding texture in our texture map, then renders that texture next to the previous one. Using `prev_chars_w` allows us to keep track of where to place our current character as we iterate through all characters in the string.
 
-What is a texture? It is the object we render to the window. It is created from the `cstring` text we want to display in our chosen font.
+But how does our keyboard input get to the screen?
 
-We're creating these textures before our loop. We only need to create our texture once for a given size; there's no need to recreate these textures on each game loop iteration.
-
-```odin
-
-game.texts[TextId.Title] = create_text("Testing", 3)
-game.texts[TextId.SubTitle] = create_text("One, Two, Three")
-
-```
-
-### TextId Enum
-
-To help keep track of our Text objects we're storing each in an enumerated array with easy-to-read lookup keys that are enum variants.
-
-Enums, or Enumeration Types, define a new type with the values we choose. In our case we have a type of `TypeId` with possible values `Title` and `SubTitle`.
-
-When we want to render one of our text textures, we just have to get it from our array and tell SDL where to render it:
+## Taking Keyboard Input
 
 ```odin
 
-title := game.texts[TextId.Title]
-// render roughly at the center of the window
-title.dest.x = (WINDOW_WIDTH / 2) - (title.dest.w / 2)
-title.dest.y = (WINDOW_HEIGHT / 2) - (title.dest.h)
-SDL.RenderCopy(game.renderer, title.tex, nil, &title.dest)
+handle_events :: proc(event: ^SDL.Event)
+{
+
+	scancode := event.key.keysym.scancode
+
+	if event.type == SDL.EventType.TEXTINPUT
+	{
+		input := cstring(raw_data(event.text.text[:]))
+		game.text_input = strings.concatenate({game.text_input, string(input)})
+	}
+
+	if scancode == .BACKSPACE
+	{
+		//
+	}
+
+}
 
 ```
 
-### Changing Font Size
+In our `handle_events()` function we handle all TEXTINPUT events to grab the text from `event.text.text`. It's necessary to transform the text slice to a cstring to strip out any odd characters -- `cstring(raw_data(event.text.text[:]))`. We then concatenate the current string with the new input. `strings.concatenate({game.text_input, string(input)})`.
 
-There are three ways we change the font size:
+If we make a mistake, deleting the last character is easy. We take a slice of the current string being sure to leave off the last character in the string.
 
-1. Setting font_size when we call `SDL_TTF.OpenFont()`
-2. Re-setting the font_size using `SDL_TTF.SetFontSize()`
-3. Scaling our destination SDL.Rect to which we render our texture.
+```odin
 
+handle_events :: proc(event: ^SDL.Event)
+{
+
+	scancode := event.key.keysym.scancode
+
+	if event.type == SDL.EventType.TEXTINPUT
+	{
+		//
+	}
+
+	if scancode == .BACKSPACE
+	{
+		if len(game.text_input) > 0
+		{
+			input := game.text_input[:len(game.text_input) -1]
+			game.text_input = input
+		}
+	}
+
+}
+
+```
+
+## StartTextInput(), StopTextInput(), and SetTextInputRect()
+
+Solid information on these functions is hard to find. They don't seem necessary for running this on Windows, though perhaps they are necessary for running a program on a phone, or accepting non-English text.
+
+If you have more information to shed some light on these functions, please share.
