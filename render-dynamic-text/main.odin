@@ -9,8 +9,6 @@ import "core:unicode/utf8/utf8string"
 
 RENDER_FLAGS :: SDL.RENDERER_ACCELERATED
 WINDOW_FLAGS :: SDL.WINDOW_SHOWN | SDL.WINDOW_RESIZABLE
-WINDOW_WIDTH :: 1024
-WINDOW_HEIGHT :: 960
 
 // Fonts
 COLOR_WHITE : SDL.Color : {255,255,255,255}
@@ -30,6 +28,8 @@ Text :: struct
 Game :: struct
 {
 	window: ^SDL.Window,
+	window_w: i32,
+	window_h: i32,
 	renderer: ^SDL.Renderer,
 
 	font: ^SDL_TTF.Font,
@@ -44,6 +44,9 @@ Game :: struct
 }
 
 game := Game{
+	window_w = 1024,
+	window_h = 960,
+
 	font_size = 72,
 	chars = make(map[rune]^SDL.Texture),
 }
@@ -95,6 +98,17 @@ main :: proc()
 
 handle_events :: proc(event: ^SDL.Event)
 {
+	if event.type == SDL.EventType.WINDOWEVENT
+	{
+        if (event.window.windowID == SDL.GetWindowID(game.window))
+        {
+        	if event.window.event == SDL.WindowEventID.RESIZED
+        	{
+        		game.window_w = event.window.data1
+        		game.window_h = event.window.data2
+        	}
+        }
+	}
 
 	scancode := event.key.keysym.scancode
 
@@ -144,8 +158,8 @@ init_sdl :: proc()
 		"SDL2 Examples",
 		SDL.WINDOWPOS_CENTERED,
 		SDL.WINDOWPOS_CENTERED,
-		WINDOW_WIDTH,
-		WINDOW_HEIGHT,
+		game.window_w,
+		game.window_h,
 		WINDOW_FLAGS,
 	)
 	assert(game.window != nil, SDL.GetErrorString())
