@@ -44,7 +44,7 @@ Game :: struct
 }
 
 game := Game{
-	font_size = 28,
+	font_size = 72,
 	chars = make(map[rune]^SDL.Texture),
 }
 
@@ -174,7 +174,7 @@ clean_sdl :: proc()
 create_chars :: proc()
 {
 
-	chars := "!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	chars := "?!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	for c in chars[:]
 	{
 		str := utf8.runes_to_string([]rune{c})

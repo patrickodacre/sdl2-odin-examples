@@ -6,6 +6,8 @@ By "dynamic" I mean text that isn't known at compile time.
 
 This is a fairly simple example -- things like word-wrapping and line breaks aren't handled.
 
+**If you haven't already read the guide on Rendering Static Text, please do so before reading this one.**
+
 ## Texture Map
 
 First, we create a `map` so we can lookup textures for numbers, letters, and other symbols.
