@@ -6,8 +6,6 @@ import SDL_TTF "vendor:sdl2/ttf"
 
 RENDER_FLAGS :: SDL.RENDERER_ACCELERATED
 WINDOW_FLAGS :: SDL.WINDOW_SHOWN | SDL.WINDOW_RESIZABLE
-WINDOW_WIDTH :: 1024
-WINDOW_HEIGHT :: 960
 
 // Fonts
 COLOR_WHITE : SDL.Color : {255,255,255,255}
@@ -27,6 +25,8 @@ Text :: struct
 Game :: struct
 {
 	window: ^SDL.Window,
+	window_w: i32,
+	window_h: i32,
 	renderer: ^SDL.Renderer,
 
 	font: ^SDL_TTF.Font,
@@ -35,6 +35,9 @@ Game :: struct
 }
 
 game := Game{
+	window_w = 1024,
+	window_h = 960,
+
 	font_size = 28,
 }
 
@@ -65,14 +68,14 @@ main :: proc()
 		// render Title
 		title := &game.texts[TextId.Title]
 		// render roughly at the center of the window
-		title.dest.x = (WINDOW_WIDTH / 2) - (title.dest.w / 2)
-		title.dest.y = (WINDOW_HEIGHT / 2) - (title.dest.h)
+		title.dest.x = (game.window_w / 2) - (title.dest.w / 2)
+		title.dest.y = (game.window_h / 2) - (title.dest.h)
 		SDL.RenderCopy(game.renderer, title.tex, nil, &title.dest)
 
 		// render Sub Title
 		sub_title := &game.texts[TextId.SubTitle]
-		sub_title.dest.x = (WINDOW_WIDTH / 2) - (sub_title.dest.w / 2)
-		sub_title.dest.y = (WINDOW_HEIGHT / 2) + (title.dest.h / 2)
+		sub_title.dest.x = (game.window_w / 2) - (sub_title.dest.w / 2)
+		sub_title.dest.y = (game.window_h / 2) + (title.dest.h / 2)
 		SDL.RenderCopy(game.renderer, sub_title.tex, nil, &sub_title.dest)
 
 
@@ -86,6 +89,18 @@ main :: proc()
 
 handle_events :: proc(event: ^SDL.Event)
 {
+
+	if event.type == SDL.EventType.WINDOWEVENT
+	{
+        if (event.window.windowID == SDL.GetWindowID(game.window))
+        {
+        	if event.window.event == SDL.WindowEventID.RESIZED
+        	{
+        		game.window_w = event.window.data1
+        		game.window_h = event.window.data2
+        	}
+        }
+	}
 
 	if event.type != SDL.EventType.KEYDOWN && event.type != SDL.EventType.KEYUP do return
 
@@ -143,8 +158,8 @@ init_sdl :: proc()
 		"SDL2 Examples",
 		SDL.WINDOWPOS_CENTERED,
 		SDL.WINDOWPOS_CENTERED,
-		WINDOW_WIDTH,
-		WINDOW_HEIGHT,
+		game.window_w,
+		game.window_h,
 		WINDOW_FLAGS,
 	)
 	assert(game.window != nil, SDL.GetErrorString())
