@@ -32,7 +32,60 @@ create_chars :: proc()
 
 ```
 
-This map helps us when it comes time to render the text we capture from the TEXTINPUT event.
+Our map and related `Text` struct are defined and initialized like so:
+
+```odin
+
+Text :: struct
+{
+	tex: ^SDL.Texture,
+	dest: SDL.Rect,
+}
+
+Game :: struct
+{
+	// existing code..
+
+	chars: map[rune]Text,
+}
+
+game := Game{
+	chars = make(map[rune]Text),
+}
+
+```
+
+To create the `Text` objects stored in our `game.chars` map we use the `create_text` function from the last guide:
+
+```odin
+COLOR_WHITE : SDL.Color : {255,255,255,255}
+
+// create textures for the given str
+// optional scale param allows us to easily size the texture generated
+// relative to the current game.font_size
+create_text :: proc(str: cstring, scale: i32 = 1) -> Text
+{
+	// create surface
+	surface := SDL_TTF.RenderText_Solid(game.font, str, COLOR_WHITE)
+	defer SDL.FreeSurface(surface)
+
+	// create texture to render
+	texture := SDL.CreateTextureFromSurface(game.renderer, surface)
+
+	// destination SDL.Rect
+	dest_rect := SDL.Rect{}
+	SDL_TTF.SizeText(game.font, str, &dest_rect.w, &dest_rect.h)
+
+	// scale the size of the text
+	dest_rect.w *= scale
+	dest_rect.h *= scale
+
+	return Text{tex = texture, dest = dest_rect}
+}
+
+```
+
+This map of `Text` objects helps us when it comes time to render the text we capture from the TEXTINPUT event.
 
 We render our captured text in our game loop:
 
