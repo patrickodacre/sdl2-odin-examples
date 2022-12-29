@@ -2,7 +2,7 @@
 
 This is a method I came up with for rendering dynamic text.
 
-By "dynamic" I mean text that isn't known at compile time.
+By "dynamic" I mean text that isn't known at compile time -- text that comes from keyboard input events.
 
 This is a fairly simple example -- things like word-wrapping and line breaks aren't handled.
 
@@ -18,55 +18,70 @@ First, we create a `map` so we can lookup textures for numbers, letters, and oth
 create_chars :: proc()
 {
 
-	chars := "!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	chars := " ?!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 	for c in chars[:]
 	{
 		str := utf8.runes_to_string([]rune{c})
 		defer delete(str)
 
-		surface := SDL_TTF.RenderText_Solid(game.font, cstring(raw_data(str)), COLOR_WHITE)
-		defer SDL.FreeSurface(surface)
-
-		game.chars[c] = SDL.CreateTextureFromSurface(game.renderer, surface)
+		game.chars[c] = create_text(cstring(raw_data(str)))
 	}
+
 }
 
 ```
 
-This map helps us when using `make_word()`.
+This map helps us when it comes time to render the text we capture from the TEXTINPUT event.
 
-## make_word() to Render Our Text
+We render our captured text in our game loop:
 
 ```odin
 
-// render textures corresponding to each char in a string
-make_word :: proc(text: string, x, y : i32, dest: ^SDL.Rect)
+game_loop : for
 {
+
+	if SDL.PollEvent(&event)
+	{
+		if end_game(&event) do break game_loop
+
+		handle_events(&event)
+	}
+
+
+	// START update and render
 
 	char_spacing : i32 = 2
 	prev_chars_w : i32 = 0
 
-	for c in text
+	starting_x : i32 = 100
+	starting_y : i32 = 100
+
+	// iterate characters in the string
+	for c in game.text_input
 	{
-		char_tex := game.chars[c]
+		// grab the texture for the single character
+		char : Text = game.chars[c]
 
-		// render this char after the previous one
-		dest.x = x + prev_chars_w
-		dest.y = y
-		// size dest SDL.Rect for the current char_tex
-		SDL.QueryTexture(char_tex, nil, nil, &dest.w, &dest.h)
+		// render this character after the previous one
+		char.dest.x = starting_x + prev_chars_w
+		char.dest.y = starting_y
 
-		SDL.RenderCopy(game.renderer, char_tex, nil, dest)
+		SDL.RenderCopy(game.renderer, char.tex, nil, &char.dest)
 
-		prev_chars_w += dest.w + char_spacing
+		prev_chars_w += char.dest.w + char_spacing
 	}
+
+	// END update and render
+
+	draw_scene()
 }
 
 ```
 
-`make_word()` goes through each character in a string, finds its corresponding texture in our texture map, then renders that texture next to the previous one. Using `prev_chars_w` allows us to keep track of where to place our current character as we iterate through all characters in the string.
+Our render code goes through each character in a string -- `game.text_input`, finds its corresponding texture in our texture map, then renders that texture next to the previous one. Using `prev_chars_w` allows us to keep track of where to place our current character as we iterate through all characters in the string.
 
-But how does our keyboard input get to the screen?
+But how do we capture the text input from the keyboard?
 
 ## Taking Keyboard Input
 
