@@ -5,19 +5,12 @@ import SDL "vendor:sdl2"
 import SDL_TTF "vendor:sdl2/ttf"
 import "core:strings"
 import "core:unicode/utf8"
-import "core:unicode/utf8/utf8string"
 
 RENDER_FLAGS :: SDL.RENDERER_ACCELERATED
 WINDOW_FLAGS :: SDL.WINDOW_SHOWN | SDL.WINDOW_RESIZABLE
 
 // Fonts
 COLOR_WHITE : SDL.Color : {255,255,255,255}
-
-TextId :: enum
-{
-	Title,
-	SubTitle,
-}
 
 Text :: struct
 {
@@ -34,9 +27,8 @@ Game :: struct
 
 	font: ^SDL_TTF.Font,
 	font_size: i32,
-	texts: [TextId]Text,
 
-	chars: map[rune]^SDL.Texture,
+	chars: map[rune]Text,
 
 	text_input: string,
 	text_input_dest: SDL.Rect,
@@ -47,8 +39,8 @@ game := Game{
 	window_w = 1024,
 	window_h = 960,
 
-	font_size = 72,
-	chars = make(map[rune]^SDL.Texture),
+	font_size = 80,
+	chars = make(map[rune]Text),
 }
 
 main :: proc()
@@ -82,10 +74,26 @@ main :: proc()
 
 		// START update and render
 
-		x : i32 = 100
-		y : i32 = 100
-		// reuse the same text_input_dest rather than create a new SDL.Rect each frame
-		make_word(game.text_input, x, y, &game.text_input_dest)
+		char_spacing : i32 = 2
+		prev_chars_w : i32 = 0
+
+		starting_x : i32 = 100
+		starting_y : i32 = 100
+
+		// iterate characters in the string
+		for c in game.text_input
+		{
+			// grab the texture for the single character
+			char : Text = game.chars[c]
+
+			// render this character after the previous one
+			char.dest.x = starting_x + prev_chars_w
+			char.dest.y = starting_y
+
+			SDL.RenderCopy(game.renderer, char.tex, nil, &char.dest)
+
+			prev_chars_w += char.dest.w + char_spacing
+		}
 
 		// END update and render
 
@@ -188,41 +196,43 @@ clean_sdl :: proc()
 create_chars :: proc()
 {
 
-	chars := "?!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	chars := " ?!@#$%^&*();:',.@_0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 	for c in chars[:]
 	{
 		str := utf8.runes_to_string([]rune{c})
 		defer delete(str)
 
-		surface := SDL_TTF.RenderText_Solid(game.font, cstring(raw_data(str)), COLOR_WHITE)
-		defer SDL.FreeSurface(surface)
-
-		game.chars[c] = SDL.CreateTextureFromSurface(game.renderer, surface)
+		game.chars[c] = create_text(cstring(raw_data(str)))
 	}
+
+
+
 }
 
-// render textures corresponding to each char in a string
-make_word :: proc(text: string, x, y : i32, dest: ^SDL.Rect)
+// create textures for the given str
+// optional scale param allows us to easily size the texture generated
+// relative to the current game.font_size
+create_text :: proc(str: cstring, scale: i32 = 1) -> Text
 {
+	// create surface
+	surface := SDL_TTF.RenderText_Solid(game.font, str, COLOR_WHITE)
+	defer SDL.FreeSurface(surface)
 
-	char_spacing : i32 = 2
-	prev_chars_w : i32 = 0
+	// create texture to render
+	texture := SDL.CreateTextureFromSurface(game.renderer, surface)
 
-	for c in text
-	{
-		char_tex := game.chars[c]
+	// destination SDL.Rect
+	dest_rect := SDL.Rect{}
+	SDL_TTF.SizeText(game.font, str, &dest_rect.w, &dest_rect.h)
 
-		// render this char after the previous one
-		dest.x = x + prev_chars_w
-		dest.y = y
-		// size dest SDL.Rect for the current char_tex
-		SDL.QueryTexture(char_tex, nil, nil, &dest.w, &dest.h)
+	// scale the size of the text
+	dest_rect.w *= scale
+	dest_rect.h *= scale
 
-		SDL.RenderCopy(game.renderer, char_tex, nil, dest)
-
-		prev_chars_w += dest.w + char_spacing
-	}
+	return Text{tex = texture, dest = dest_rect}
 }
+
 
 // check for a quit event
 // this is an example of using a Named Result - "exit".
