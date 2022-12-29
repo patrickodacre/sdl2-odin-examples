@@ -61,9 +61,9 @@ Text :: struct
 
 ```
 
-This struct holds a reference to our texture and the SDL.Rect used to render the texture to the window.
+This struct holds a reference to our `texture` and the `SDL.Rect` used to render the texture to the window.
 
-What is a texture? It is the object we render to the window. It is created from the `cstring` text we want to display in our chosen font.
+What is a texture? It is the object we render to the window in the rectangular space designated by the `SDL.Rect` created. It is created from the `cstring` text we want to display in our chosen font.
 
 We're creating these textures before our loop. We only need to create our texture once for a given size; there's no need to recreate these textures on each game loop iteration.
 
@@ -94,9 +94,7 @@ SDL.RenderCopy(game.renderer, title.tex, nil, &title.dest)
 
 ### Changing Font Size
 
-There are three ways we change the font size:
+There are two ways we change the font size after we set it with `SDL_TTF.OpenFont()`:
 
-1. Setting font_size when we call `SDL_TTF.OpenFont()`
-2. Re-setting the font_size using `SDL_TTF.SetFontSize()`
-3. Scaling our destination SDL.Rect to which we render our texture.
-
+1. Re-setting the font_size using `SDL_TTF.SetFontSize()` and recreating any textures.
+2. Scaling our destination SDL.Rect to which we render our texture.

@@ -66,14 +66,14 @@ main :: proc()
 		// START update and render
 
 		// render Title
-		title : Text = &game.texts[TextId.Title]
+		title : Text = game.texts[TextId.Title]
 		// render roughly at the center of the window
 		title.dest.x = (game.window_w / 2) - (title.dest.w / 2)
 		title.dest.y = (game.window_h / 2) - (title.dest.h)
 		SDL.RenderCopy(game.renderer, title.tex, nil, &title.dest)
 
 		// render Sub Title
-		sub_title : Text = &game.texts[TextId.SubTitle]
+		sub_title : Text = game.texts[TextId.SubTitle]
 		sub_title.dest.x = (game.window_w / 2) - (sub_title.dest.w / 2)
 		sub_title.dest.y = (game.window_h / 2) + (title.dest.h / 2)
 		SDL.RenderCopy(game.renderer, sub_title.tex, nil, &sub_title.dest)
