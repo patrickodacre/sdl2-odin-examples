@@ -31,7 +31,6 @@ Game :: struct
 	chars: map[rune]Text,
 
 	text_input: string,
-	text_input_dest: SDL.Rect,
 
 }
 
@@ -205,8 +204,6 @@ create_chars :: proc()
 
 		game.chars[c] = create_text(cstring(raw_data(str)))
 	}
-
-
 
 }
 
